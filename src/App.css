@@ -8,6 +8,7 @@
 
 .admin-header {
   display: flex;
+  flex-shrink: 0;
   gap: 10px;
   justify-content: center;
   align-items: center;
@@ -92,7 +93,7 @@
 }
 
 .consumer-box {
-  margin-top: 100px;
+  margin-top: 20px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -106,6 +107,11 @@
   flex-direction: column;
   align-items: start;
   gap: 20px;
+}
+
+span[contenteditable="true"] {
+  padding: 8px 10px;
+  border-radius: 3px;
 }
 
 button,
@@ -124,4 +130,18 @@ button,
 button:not(button:disabled):hover,
 .btn:not(button:disabled):hover {
   border-color: #646cff;
+}
+
+input[type=file]::file-selector-button {
+  border: 2px solid #646cff;
+  padding: .4em .6em;
+  border-radius: 5px;
+  background-color: #646cff;
+  color: #fff;
+  transition: 1s;
+  cursor: pointer;
+}
+
+input[type=file]::file-selector-button:hover {
+  filter: brightness(1.2);
 }

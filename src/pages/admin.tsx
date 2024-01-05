@@ -49,18 +49,14 @@ function Admin() {
     }
 
     const handleBlur = (e: React.FocusEvent<HTMLDivElement | HTMLSpanElement>, key: string, id: string) => {
-        const findConfigValue = configs.find(config => config.id === id)?.props
+        const findConfigValue = configs.find(config => config.id === id)?.props as any
 
-        const currValue = e.target?.innerText
+        let currValue = e.target?.innerText
 
         if(findConfigValue?.[key].toString() !== currValue) {
             setIsSaved(false)
         }
-
-        if(!currValue) {
-            console.log(e.target);
-            e.target.innerHTML = TEXT_DEFAULT
-        }
+        if(!currValue) currValue = TEXT_DEFAULT
 
         const newConfigs = [...configs].map(config => config.id !== id ? config : {
             ...config,
@@ -69,7 +65,6 @@ function Admin() {
                 [key]: currValue
             }
         })
-        console.log(newConfigs);
         setConfigs(newConfigs);
     }
 
@@ -83,7 +78,6 @@ function Admin() {
         if(!jsonStr) return
 
         const filename = 'data.json';
-
         const element = document.createElement('a');
         element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jsonStr));
         element.setAttribute('download', filename);
@@ -103,7 +97,12 @@ function Admin() {
         reader.onload = (e) => {
             const jsonData = e.target?.result?.toString() || ''
             if(jsonData) {
-                setConfigs(JSON.parse(jsonData))
+                const configData = JSON.parse(jsonData)
+                if(!Array.isArray(configData)) {
+                    alert('Import Fail')
+                    return
+                }
+                setConfigs(configData)
                 setIsImport(false)
                 handleSave()
             } else {
@@ -112,6 +111,10 @@ function Admin() {
         };
         reader.readAsText(file);
     }
+
+    const viewInNewTab = (url: string) => {
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
 
     const renderConfig = () => {
         return configs.map((config, index) => {
@@ -155,7 +158,7 @@ function Admin() {
     <div className='container'>
        <div className='admin-header'>
             <button 
-                disabled={configs?.length === 0}
+                disabled={configs?.length === 0 || isSaved}
                 onClick={handleSave}
             >
                 Save
@@ -175,6 +178,7 @@ function Admin() {
             </button>
             <button 
                 disabled={!isSaved}
+                onClick={() => viewInNewTab('/consumer')}
             >
                 View
             </button>
@@ -202,7 +206,12 @@ function Admin() {
                 isImport ?
                 <div className='admin-body__right'>
                     <div className='upload-box'>
-                        <input type='file' onChange={handleImport} />
+                        <input type='file' onChange={handleImport} accept='.json'/>
+                        <button
+                            onClick={() => setIsImport(false)}
+                        >
+                            Back
+                        </button>
                     </div>
                 </div> :
                 <div className='admin-body__right'>
