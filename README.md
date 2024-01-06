@@ -1,12 +1,13 @@
-# Drag & Drag Pet Project
+# Drag & Drop Pet Project
 
 ## Demo
+* **Admin Page**
 ![Demo Admin](image.png)
+
+* **Consumer Page**
 ![Demo Consumer](image-1.png)
 
 ## Setup
-
-* **Nodejs > v14.0.x**
 
 Clone project and run example.
 
