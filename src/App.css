@@ -32,7 +32,8 @@
 }
 
 .tool-item {
-  padding: 10px 10px;
+  width: 90px;
+  padding-block: 10px;
   border-radius: 5px;
   display: flex;
   flex-direction: column;
@@ -45,6 +46,11 @@
   cursor: move;
 }
 
+.init-text {
+  width: 100%;
+  text-align: center;
+  color: #d5d5d7;
+}
 
 .tool-item div {
   width: 50px;
@@ -124,7 +130,16 @@ button,
   font-weight: 500;
   font-family: inherit;
   background-color: #f9f9f9;
+  cursor: pointer;
   transition: border-color 0.25s;
+}
+
+.btn {
+  cursor: text;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 button:not(button:disabled):hover,

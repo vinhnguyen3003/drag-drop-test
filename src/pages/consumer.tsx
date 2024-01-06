@@ -1,5 +1,5 @@
+import { IConfigItem } from '../@types'
 import { BTN_TYPE_KEY, LOCAL_STORAGE_KEY } from '../constants'
-import { IConfigItem } from './admin'
 
 function Consumer() {
   const jsonData = localStorage.getItem(LOCAL_STORAGE_KEY)

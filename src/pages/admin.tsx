@@ -1,22 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BTN_TYPE_KEY, LOCAL_STORAGE_KEY, PARAGRAPH_TYPE_KEY, TEXT_BTN_DEFAULT, TEXT_DEFAULT } from '../constants'
-
-
-export interface IConfigItem {
-    id: string,
-    type: string,
-    props: {
-        text: string,
-        message: string
-    }
-}
+import { exportJson, importJson } from '../utils'
+import { IConfigs } from '../@types'
 
 function Admin() {
-    const [configs, setConfigs] = useState<Array<IConfigItem>>([])
+    const [configs, setConfigs] = useState<IConfigs>([])
     const [draggingEl, setDraggingEl] = useState<string>('')
     const [focusEl, setFocusEl] = useState<string>('')
     const [isSaved, setIsSaved] = useState<boolean>(false)
     const [isImport, setIsImport] = useState<boolean>(false)
+    const [history, setHistory] = useState<Array<IConfigs>>([])
+    const [step, setStep] = useState<number>(-1)
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, type: string) => {
         setDraggingEl(type)
@@ -48,11 +42,10 @@ function Admin() {
         setFocusEl(id)
     }
 
-    const handleBlur = (e: React.FocusEvent<HTMLDivElement | HTMLSpanElement>, key: string, id: string) => {
-        const findConfigValue = configs.find(config => config.id === id)?.props as any
+    const handleBlur = (e: React.FocusEvent<HTMLDivElement | HTMLSpanElement>, key: 'text' | 'message', id: string) => {
+        const findConfigValue = configs.find(config => config.id === id)?.props
 
         let currValue = e.target?.innerText
-
         if(findConfigValue?.[key].toString() !== currValue) {
             setIsSaved(false)
         }
@@ -65,37 +58,25 @@ function Admin() {
                 [key]: currValue
             }
         })
-        setConfigs(newConfigs);
+        e.target.innerHTML = currValue
+        setConfigs(newConfigs)
     }
 
-    const handleSave = () => {
+    const handleSave = (data: IConfigs) => {
         setIsSaved(true)
+        const newHistory = [...history, data]
+        setHistory(newHistory)
+        setStep(newHistory.length - 1)
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(configs))
     }
 
     const handleExport = () => {
         const jsonStr = configs?.length ? JSON.stringify(configs) : null
-        if(!jsonStr) return
-
-        const filename = 'data.json';
-        const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jsonStr));
-        element.setAttribute('download', filename);
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+        if(jsonStr) exportJson(jsonStr)
     }
 
-
     const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files
-        if (!files?.length) return
-
-        const file = files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const jsonData = e.target?.result?.toString() || ''
+        importJson(e, (jsonData) => {
             if(jsonData) {
                 const configData = JSON.parse(jsonData)
                 if(!Array.isArray(configData)) {
@@ -104,12 +85,11 @@ function Admin() {
                 }
                 setConfigs(configData)
                 setIsImport(false)
-                handleSave()
+                handleSave(configData)
             } else {
                 alert('Import Fail')
             }
-        };
-        reader.readAsText(file);
+        })
     }
 
     const viewInNewTab = (url: string) => {
@@ -142,7 +122,7 @@ function Admin() {
                 </div>
             } 
             else if(type === PARAGRAPH_TYPE_KEY) {
-                return <div 
+                return <span 
                     key={index}
                     contentEditable={true} 
                     suppressContentEditableWarning={true}
@@ -153,96 +133,116 @@ function Admin() {
             }
         })
     }
+    useEffect(() => {
+        step >= 0 && step <= history.length - 1 && setConfigs(history[step] || [])
+        step < 0 && setConfigs([])
+    }, [step])
 
-  return (
-    <div className='container'>
-       <div className='admin-header'>
-            <button 
-                disabled={configs?.length === 0 || isSaved}
-                onClick={handleSave}
-            >
-                Save
-            </button>
-            <button>Undo</button>
-            <button>Redo</button>
-            <button 
-                disabled={!isSaved}
-                onClick={handleExport}
-            >
-                Export
-            </button>
-            <button 
-                onClick={() => setIsImport(!isImport)}
-            >
-                Import
-            </button>
-            <button 
-                disabled={!isSaved}
-                onClick={() => viewInNewTab('/consumer')}
-            >
-                View
-            </button>
-       </div>
-       <div className='admin-body'>
-            <div className='admin-body__left'>
-                <div 
-                    className='tool-item' 
-                    draggable={true} 
-                    onDragStart={(e) => handleDragStart(e, PARAGRAPH_TYPE_KEY)}
+    return (
+        <div className='container'>
+            <div className='admin-header'>
+                <button 
+                    disabled={configs?.length === 0 || isSaved}
+                    onClick={() => handleSave(configs)}
                 >
-                    <div />
-                    <span>Paragraph</span>
-                </div>
-                <div 
-                    className='tool-item' 
-                    draggable={true} 
-                    onDragStart={(e) => handleDragStart(e, BTN_TYPE_KEY)}
+                    Save
+                </button>
+                <button
+                    disabled={step < 0}
+                    onClick={() => setStep(step - 1)}
                 >
-                    <div />
-                    <span>Button</span>
-                </div>
+                    Undo
+                </button>
+                <button
+                    disabled={step >= history.length - 1}
+                    onClick={() => setStep(step + 1)}
+                >
+                    Redo
+                </button>
+                <button 
+                    disabled={!isSaved}
+                    onClick={handleExport}
+                >
+                    Export
+                </button>
+                <button 
+                    onClick={() => setIsImport(!isImport)}
+                >
+                    Import
+                </button>
+                <button 
+                    disabled={!isSaved}
+                    onClick={() => viewInNewTab('/consumer')}
+                >
+                    View
+                </button>
             </div>
-            {
-                isImport ?
-                <div className='admin-body__right'>
-                    <div className='upload-box'>
-                        <input type='file' onChange={handleImport} accept='.json'/>
-                        <button
-                            onClick={() => setIsImport(false)}
-                        >
-                            Back
-                        </button>
-                    </div>
-                </div> :
-                <div className='admin-body__right'>
+            <div className='admin-body'>
+                <div className='admin-body__left'>
                     <div 
-                        className='body-right-config' 
-                        onDragOver={handleDropOver} 
-                        onDrop={handleDrop}
+                        className='tool-item' 
+                        draggable={true} 
+                        onDragStart={(e) => handleDragStart(e, PARAGRAPH_TYPE_KEY)}
                     >
-                        {configs?.length ? renderConfig() : null}
+                        <div />
+                        <span>Paragraph</span>
                     </div>
-                    <div className='body-right-info'>
-                        <div className='info-item'>
-                            <span>Dragging:</span>
-                            <span>{draggingEl ? `${draggingEl} Element` : ''}</span>
-                        </div>
-                        <div className='info-item'>
-                            <span>Instances:</span>
-                            <span>{configs?.length}</span>
-                        </div>
-                        <div className='info-item'>
-                            <span>Config Json:</span>
-                            <span>
-                                {JSON.stringify(configs?.find(config => config.id === focusEl) || '')}
-                            </span>
-                        </div>
+                    <div 
+                        className='tool-item' 
+                        draggable={true} 
+                        onDragStart={(e) => handleDragStart(e, BTN_TYPE_KEY)}
+                    >
+                        <div />
+                        <span>Button</span>
                     </div>
                 </div>
-            }
-       </div>
-    </div>
-  )
+                {
+                    isImport ?
+                    <div className='admin-body__right'>
+                        <div className='upload-box'>
+                            <input type='file' onChange={handleImport} accept='.json'/>
+                            <button
+                                onClick={() => setIsImport(false)}
+                            >
+                                Back
+                            </button>
+                        </div>
+                    </div> :
+                    <div className='admin-body__right'>
+                        <div 
+                            className='body-right-config' 
+                            onDragOver={handleDropOver} 
+                            onDrop={handleDrop}
+                        >
+                            {
+                                configs?.length ? 
+                                renderConfig() : 
+                                <div className='init-text'>
+                                    Drag & Drop to start
+                                </div>
+                            }
+                        </div>
+                        <div className='body-right-info'>
+                            <div className='info-item'>
+                                <span>Dragging:</span>
+                                <span>{draggingEl ? `${draggingEl} Element` : ''}</span>
+                            </div>
+                            <div className='info-item'>
+                                <span>Instances:</span>
+                                <span>{configs?.length}</span>
+                            </div>
+                            <div className='info-item'>
+                                <span>Config Json:</span>
+                                <span>
+                                    {JSON.stringify(configs?.find(config => config.id === focusEl) || '')}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    )
 }
 
 export default Admin
