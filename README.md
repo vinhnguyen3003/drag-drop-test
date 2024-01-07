@@ -2,10 +2,10 @@
 
 ## Demo
 * **Admin Page**
-![Demo Admin](image.png)
+![Demo Admin](./public/images/demo-admin.png)
 
 * **Consumer Page**
-![Demo Consumer](image-1.png)
+![Demo Consumer](./public/images/demo-consumer.png)
 
 ## Setup
 
