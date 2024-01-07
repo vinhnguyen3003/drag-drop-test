@@ -136,6 +136,7 @@ function Admin() {
     useEffect(() => {
         step >= 0 && step <= history.length - 1 && setConfigs(history[step] || [])
         step < 0 && setConfigs([])
+        focusEl && setFocusEl('')
     }, [step])
 
     return (
